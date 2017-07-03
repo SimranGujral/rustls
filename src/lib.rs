@@ -59,7 +59,7 @@ use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration,Instant};
 
 #[derive(PartialEq, Eq, Hash)]
 struct SessionKey {
@@ -109,6 +109,7 @@ impl<T> SslClient<T> for OpensslClient
     type Stream = SslStream<T>;
 
     fn wrap_client(&self, mut stream: T, host: &str) -> hyper::Result<SslStream<T>> {
+        println!("Inside wrap Client now. We will put timings here");
         let mut conf = try!(self.connector.configure().map_err(|e| hyper::Error::Ssl(Box::new(e))));
         let key = SessionKey {
             host: host.to_owned(),
@@ -121,11 +122,16 @@ impl<T> SslClient<T> for OpensslClient
                     .map_err(|e| hyper::Error::Ssl(Box::new(e))));
             }
         }
+
+        let stream_wc = Instant::now();
         let stream = if self.disable_verification {
             conf.danger_connect_without_providing_domain_for_certificate_verification_and_server_name_indication(stream)
         } else {
             conf.connect(host, stream)
         };
+        let dur = stream_wc.elapsed();
+        println!("stream connect in wrap client {} ns",  dur.subsec_nanos());
+
         match stream {
             Ok(stream) => {
                 if !stream.ssl().session_reused() {
