@@ -4,7 +4,8 @@ extern crate hyper_openssl;
 extern crate time;
 #[macro_use]
 extern crate lazy_static;
-
+#[macro_use] 
+extern crate log;
 
 pub mod hosts;
 use hosts::replace_host;
@@ -21,6 +22,7 @@ use hyper::error::{Result as HyperResult, Error as HyperError};
 use std::io;
 use std::net::TcpStream;
 use std::time::{Duration,Instant};
+
 //use time;
 
 static BOGO_NACK: i32 = 89;
@@ -76,22 +78,22 @@ fn make_client_config(opts:&Options)->OpensslClient{
         let context_time = Instant::now();
         context.set_ca_file(&ca_file).expect("could not set CA file");
         let dur = context_time.elapsed();
-        println!("setting certificates {} ns", dur.subsec_nanos());
+        
         let cipher_set_time = Instant::now();
         context.set_cipher_list(DEFAULT_CIPHERS).expect("could not set ciphers");
         let dur_cipher = cipher_set_time.elapsed();
-        println!("Time for setting ciphers {} ns", dur_cipher.subsec_nanos());
-
+        
         let options_time = Instant::now();
         context.set_options(SSL_OP_NO_SSLV2 | SSL_OP_NO_SSLV3 | SSL_OP_NO_COMPRESSION);
         let dur_options = options_time.elapsed();
-        println!("Set options {} ns", dur_options.subsec_nanos());
+
+        print!("{} \t {} \t {} \t", dur.subsec_nanos(), dur_cipher.subsec_nanos(), dur_options.subsec_nanos());
     }
     let options_connector = Instant::now();
     let ssl_connector = ssl_connector_builder.build();
     let dur_connector = options_connector.elapsed();
-    println!("Time to create an ssl connector {} ns", dur_connector.subsec_nanos());
-
+    print!("{} \t", dur_connector.subsec_nanos());
+	
 	OpensslClient::from(ssl_connector)
 }
 
@@ -113,17 +115,15 @@ impl NetworkConnector for HttpsConnector {
             return Err(HyperError::Io(io::Error::new(io::ErrorKind::InvalidInput,
                                                      "Invalid scheme for Http")));
         }
-
-        // Perform host replacement when making the actual TCP connection.
         let ipv4_time = Instant::now();
         let addr = lookup_ipv4(host,port);
         let dur = ipv4_time.elapsed();
-        println!("duration for ipv4 lookup {} ns",dur.subsec_nanos());
+        print!("{} \t ",dur.subsec_nanos());
         
         let stream_time = Instant::now();
         let stream = HttpStream(try!(TcpStream::connect(&addr)));
         let dur_stream = stream_time.elapsed();
-        println!("Time for stream creation {} ns", dur_stream.subsec_nanos());
+        print!("{} \t", dur_stream.subsec_nanos());
         //println!("hostname verification");
 
         if scheme == "http" {
@@ -136,7 +136,6 @@ impl NetworkConnector for HttpsConnector {
 
 fn lookup_ipv4(host: &str, port: u16) -> SocketAddr {
     use std::net::ToSocketAddrs;
-    println!("Finding socket address");
     let addrs = (host, port).to_socket_addrs().unwrap();
     for addr in addrs {
         if let SocketAddr::V4(_) = addr {
@@ -155,7 +154,7 @@ fn main() {
     env_logger::init().unwrap();
 
     args.remove(0);
-    println!("options: {:?}", args);
+    //println!("options: {:?}", args);
 
     let mut opts = Options::new();
     while !args.is_empty() {
@@ -301,25 +300,22 @@ fn main() {
             }
         }
     }
-    // #Uncomment this later
-    println!("opts {:?}", opts);
-    
-    println!("*********** Client creation time **************");
+
+    print!("{} \t ",&opts.host_name);
     let client_creation_time = Instant::now();
     let client = make_client_config(&opts);
     let dur = client_creation_time.elapsed();
-    println!("****** Client creation time {} ns********", dur.subsec_nanos());
-    
-    let connector = make_https_connector(client);
+	print!("{} \t", dur.subsec_nanos());
+
+	let connector = make_https_connector(client);
     let host = &opts.host_name.as_str();
     let port = opts.port;
-    let scheme = "http";
+    let scheme = "https";
 
-    println!("******Connection Time************* ");
     let connect_time = Instant::now();
     let mut stream = connector.connect(host, port, &scheme).unwrap();
     let dur = connect_time.elapsed();
-    println!("*********connection time {} ns******", dur.subsec_nanos());
+    println!("{}", dur.subsec_nanos());
 
     let httpreq = format!("GET / HTTP/1.1\r\nHost: {}\r\nConnection: \
                                close\r\nAccept-Encoding: identity\r\n\r\n",
@@ -327,7 +323,7 @@ fn main() {
     stream.write_all(httpreq.as_bytes()).unwrap();
     let mut res = vec![];
     stream.read_to_end(&mut res);
-    println!("{}", String::from_utf8_lossy(&res));
+    //println!("{}", String::from_utf8_lossy(&res));
 
 
 

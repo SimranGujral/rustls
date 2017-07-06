@@ -109,7 +109,7 @@ impl<T> SslClient<T> for OpensslClient
     type Stream = SslStream<T>;
 
     fn wrap_client(&self, mut stream: T, host: &str) -> hyper::Result<SslStream<T>> {
-        println!("Inside wrap Client now. We will put timings here");
+
         let mut conf = try!(self.connector.configure().map_err(|e| hyper::Error::Ssl(Box::new(e))));
         let key = SessionKey {
             host: host.to_owned(),
@@ -130,7 +130,7 @@ impl<T> SslClient<T> for OpensslClient
             conf.connect(host, stream)
         };
         let dur = stream_wc.elapsed();
-        println!("stream connect in wrap client {} ns",  dur.subsec_nanos());
+        print!("{} \t",  dur.subsec_nanos());
 
         match stream {
             Ok(stream) => {

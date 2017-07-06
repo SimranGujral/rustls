@@ -13,3 +13,4 @@ hyper-openssl = { path ="/Users/sgujral/Desktop/parallel_cert/hyper-openssl", ve
 parse-hosts = "0.3.0"
 lazy_static = "*"
 time = "0.1.17"
+log = "*"
