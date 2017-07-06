@@ -301,7 +301,7 @@ fn main() {
         }
     }
 
-    //print!("{} \t ",&opts.host_name);
+    print!("{} \t ",&opts.host_name);
     let client_creation_time = Instant::now();
     let client = make_client_config(&opts);
     let dur = client_creation_time.elapsed();
