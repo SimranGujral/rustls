@@ -119,7 +119,7 @@ impl NetworkConnector for HttpsConnector {
         let addr = lookup_ipv4(host,port);
         let dur = ipv4_time.elapsed();
         print!("{} \t ",dur.subsec_nanos());
-        
+        print!("{}",addr);
         let stream_time = Instant::now();
         let stream = HttpStream(try!(TcpStream::connect(&addr)));
         let dur_stream = stream_time.elapsed();
@@ -301,7 +301,7 @@ fn main() {
         }
     }
 
-    print!("{} \t ",&opts.host_name);
+    //print!("{} \t ",&opts.host_name);
     let client_creation_time = Instant::now();
     let client = make_client_config(&opts);
     let dur = client_creation_time.elapsed();
@@ -310,16 +310,29 @@ fn main() {
 	let connector = make_https_connector(client);
     let host = &opts.host_name.as_str();
     let port = opts.port;
-    let scheme = "https";
+    
+    let mut domain_name = (&opts.host_name).split("://");
+    let vec: Vec<&str> = domain_name.collect();
 
+    let scheme = if "http"==vec[0]{
+    	"http"
+    }
+    else {
+    	"https"
+    };
+    let domain_prefix: String = "www.".to_owned();
+    let domain_suffix = vec[1];
+    let domain = domain_prefix+domain_suffix;
+ 
     let connect_time = Instant::now();
-    let mut stream = connector.connect(host, port, &scheme).unwrap();
+    let mut stream = connector.connect(&domain, port, scheme).unwrap();
+
     let dur = connect_time.elapsed();
     println!("{}", dur.subsec_nanos());
 
     let httpreq = format!("GET / HTTP/1.1\r\nHost: {}\r\nConnection: \
                                close\r\nAccept-Encoding: identity\r\n\r\n",
-                              &opts.host_name);
+                              &domain);
     stream.write_all(httpreq.as_bytes()).unwrap();
     let mut res = vec![];
     stream.read_to_end(&mut res);
