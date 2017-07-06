@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd openssl-shim
+echo  Websites '\t'  Set Root Certs '\t' Set Ciphers '\t' Set Options '\t' SSL connector creation '\t' Total Time to create client '\t' IPV4 lookup '\t' stream creation '\t' Time taken to set hostname '\t' Verification function '\t' Connect in wrap_client '\t' Total Time to create the connection >output.csv
+
+# Enter any websites you may want timing measurements for here in this format. 
+./target/debug/openssl-shim -host-name https://pinterest.com -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://twitter.com -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://twitter.com -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://duckduckgo.com -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://reddit.com  -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://github.com -port 443 >> output.csv
+./target/debug/openssl-shim -host-name https://hackerrank.com -port 443 >> output.csv
