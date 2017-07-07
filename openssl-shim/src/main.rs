@@ -7,8 +7,6 @@ extern crate lazy_static;
 #[macro_use] 
 extern crate log;
 
-pub mod hosts;
-use hosts::replace_host;
 use std::env;
 use std::net::SocketAddr;
 use std::io::{Write, Read};
@@ -119,7 +117,6 @@ impl NetworkConnector for HttpsConnector {
         let addr = lookup_ipv4(host,port);
         let dur = ipv4_time.elapsed();
         print!("{} \t ",dur.subsec_nanos());
-        print!("{}",addr);
         let stream_time = Instant::now();
         let stream = HttpStream(try!(TcpStream::connect(&addr)));
         let dur_stream = stream_time.elapsed();
